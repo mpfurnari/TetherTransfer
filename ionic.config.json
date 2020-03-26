@@ -1,5 +1,7 @@
 {
   "name": "TetherTransfer",
-  "integrations": {},
+  "integrations": {
+    "cordova": {}
+  },
   "type": "angular"
 }
