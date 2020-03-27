@@ -1,4 +1,8 @@
 import { Component } from '@angular/core';
+import { HtmlProvider } from '../providers/HtmlProvider';
+import { HTTP } from '@ionic-native/http/ngx';
+import * as moment from 'moment';
+
 
 declare var JustGage: any;
 
@@ -16,7 +20,7 @@ export class Tab2Page {
   intervalTmr;
 
 
-  constructor() {
+  constructor(private http: HTTP) {
     this.inetgauge = null;
   }
 
@@ -26,17 +30,17 @@ export class Tab2Page {
 
       this.inetgauge = new JustGage({
         id: 'inetgauge', // the id of the html element
-        value: 50,
+        value: 0,
         min: 0,
-        max: 1000,
+        max: 10,
         decimals: 2,
         gaugeWidthScale: 0.6
       });
       this.gwgauge = new JustGage({
         id: 'gwgauge', // the id of the html element
-        value: 25,
+        value: 0,
         min: 0,
-        max: 100,
+        max: 10,
         decimals: 2,
         gaugeWidthScale: 0.6
       });
@@ -44,10 +48,64 @@ export class Tab2Page {
     // update the value randomly
     clearTimeout(this.intervalTmr);
     this.intervalTmr = setInterval(() => {
-      this.inetgauge.refresh(Math.random() * 1000);
-      this.gwgauge.refresh(Math.random() * 100);
-    }, 5000);
+      this.pollinet();
+    }, 500);
 
+  }
+
+  gwResp() {
+
+  }
+
+  inetResp() {
+
+  }
+
+
+  pollinet() {
+    const that = this;
+    const inetStart = new Date().getTime();
+    this.http.get('https://www.wral.com', {}, {})
+      .then(data => {
+        const elapsedtime = new Date().getTime() - inetStart;
+        const bytesrx = data.data.length;
+        console.log (bytesrx + ' bytes in ' + elapsedtime + ' milliseconds.');
+        const rate = bytesrx / elapsedtime * 0.01;
+        console.log('inet rate: ' + rate);
+        that.inetgauge.refresh(rate);
+        that.pollgw();
+
+      })
+      .catch(error => {
+
+        console.log(error.status);
+        console.log(error.error); // error message as string
+        console.log(error.headers);
+        that.inetgauge.refresh(0);
+        that.pollgw();
+
+      });
+  }
+
+  pollgw() {
+    const that = this;
+    const gwStart = new Date().getTime();
+    this.http.get('http://192.168.43.195', {}, {})
+      .then(data => {
+        const elapsedtime = new Date().getTime() - gwStart;
+        const bytesrx = data.data.length;
+        console.log (bytesrx + ' bytes in ' + elapsedtime + ' milliseconds.');
+        const rate = bytesrx / elapsedtime * 0.01;
+        console.log('gw rate: ' + rate);
+        that.gwgauge.refresh(rate);
+      })
+      .catch(error => {
+        console.log(error.status);
+        console.log(error.error); // error message as string
+        console.log(error.headers);
+        that.gwgauge.refresh(0);
+
+      });
   }
 
   ionViewDidEnter() {
